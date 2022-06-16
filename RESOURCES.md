@@ -10,3 +10,6 @@
 - [Blockchain in C++ - Medium](https://medium.com/geekculture/blockchain-implementation-in-c-390f465991d6)
 - [Davenash Blog](https://davenash.com/2017/10/build-a-blockchain-with-c/)
 - [Bitcoin Source Code](https://github.com/bitcoin/bitcoin)
+
+## C++ Package Manager
+- [vcpkg](https://vcpkg.io/en/index.html)

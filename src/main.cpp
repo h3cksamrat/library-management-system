@@ -6,39 +6,26 @@
  *
  */
 #include <iostream>
-#include "json.hpp"
+#include "blockchain.h"
+#include "nlohmann/json.hpp"
+#include "library/libraryBook.h"
+#include "library/person.h"
 
 using json = nlohmann::json;
 
-#include "blockchain.h"
-
-int BlockChain::numberOfBlocks{0};
+BlockChain *BlockChain::blockchain;
+long unsigned int BlockChain::numberOfBlocks{0};
 
 int main()
 {
-
-  BlockChain chain;
-  json j = {
-    {"book", {
-              {"name", "EDC"},
-              {"code", 2020},
-            }
-    },
-    {"student", "samrat neupane"},
-    {"taken-date", "2022-06-15"},
-    {"given-date", "2025-09-16"}
-  };
-  
-  chain.addNode(to_string(j));
-  chain.addNode("important info 2");
-
-  chain.traverseBlockChain(chain);
-  chain.checkChainConsistency(chain);
-  chain.injectDataInBlock(chain, 2, "changed info");
-  chain.traverseBlockChain(chain);
-  chain.checkChainConsistency(chain);
-  chain.recalulcateChain(chain);
-  chain.checkChainConsistency(chain);
-
+  BlockChain *chain = BlockChain::getInstance();
+  Book book("C++", "Samrat", json({{"ISBN", "123456789"}}));
+  LibraryBook libraryBook(book);
+  Person person("Samrat", "USA", 20), person2("Santra", "USA", 20);
+  libraryBook.rentBook(person);
+  libraryBook.rentBook(person2);
+  libraryBook.returnBook();
+  libraryBook.returnBook();
+  std::cout << (*chain).getBlockById(5).dump() << std::endl;
   return 0;
 }

@@ -1,16 +1,15 @@
-#ifndef SHA256_H
-#define SHA256_H
+#pragma once
 #include <string>
 #include <cstring>
 #include <fstream>
- 
+
 class SHA256
 {
 protected:
     typedef unsigned char uint8;
     typedef unsigned int uint32;
     typedef unsigned long long uint64;
- 
+
     const static uint32 sha256_k[];
     static const unsigned int SHA224_256_BLOCK_SIZE = (512/8);
 public:
@@ -18,7 +17,7 @@ public:
     void update(const unsigned char *message, unsigned int len);
     void final(unsigned char *digest);
     static const unsigned int DIGEST_SIZE = ( 256 / 8);
- 
+
 protected:
     void transform(const unsigned char *message, unsigned int block_nb);
     unsigned int m_tot_len;
@@ -26,9 +25,9 @@ protected:
     unsigned char m_block[2*SHA224_256_BLOCK_SIZE];
     uint32 m_h[8];
 };
- 
+
 std::string sha256(std::string input);
- 
+
 #define SHA2_SHFR(x, n)    (x >> n)
 #define SHA2_ROTR(x, n)   ((x >> n) | (x << ((sizeof(x) << 3) - n)))
 #define SHA2_ROTL(x, n)   ((x << n) | (x >> ((sizeof(x) << 3) - n)))
@@ -52,8 +51,8 @@ std::string sha256(std::string input);
            | ((uint32) *((str) + 1) << 16)    \
            | ((uint32) *((str) + 0) << 24);   \
 }
-#endif
- 
+
+
 const unsigned int SHA256::sha256_k[64] = //UL = uint32
             {0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
              0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -71,7 +70,7 @@ const unsigned int SHA256::sha256_k[64] = //UL = uint32
              0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
              0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
              0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
- 
+
 void SHA256::transform(const unsigned char *message, unsigned int block_nb)
 {
     uint32 w[64];
@@ -109,7 +108,7 @@ void SHA256::transform(const unsigned char *message, unsigned int block_nb)
         }
     }
 }
- 
+
 void SHA256::init()
 {
     m_h[0] = 0x6a09e667;
@@ -123,7 +122,7 @@ void SHA256::init()
     m_len = 0;
     m_tot_len = 0;
 }
- 
+
 void SHA256::update(const unsigned char *message, unsigned int len)
 {
     unsigned int block_nb;
@@ -146,7 +145,7 @@ void SHA256::update(const unsigned char *message, unsigned int len)
     m_len = rem_len;
     m_tot_len += (block_nb + 1) << 6;
 }
- 
+
 void SHA256::final(unsigned char *digest)
 {
     unsigned int block_nb;
@@ -165,17 +164,17 @@ void SHA256::final(unsigned char *digest)
         SHA2_UNPACK32(m_h[i], &digest[i << 2]);
     }
 }
- 
+
 std::string sha256(std::string input)
 {
     unsigned char digest[SHA256::DIGEST_SIZE];
     memset(digest,0,SHA256::DIGEST_SIZE);
- 
+
     SHA256 ctx = SHA256();
     ctx.init();
     ctx.update( (unsigned char*)input.c_str(), input.length());
     ctx.final(digest);
- 
+
     char buf[2*SHA256::DIGEST_SIZE+1];
     buf[2*SHA256::DIGEST_SIZE] = 0;
     for (int i = 0; i < SHA256::DIGEST_SIZE; i++)

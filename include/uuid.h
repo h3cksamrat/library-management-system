@@ -1,14 +1,15 @@
+/**
+ * @file uuid.h
+ * @author Samrat Neupane (samratneupane215@gmail.com)
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+#pragma once
 #include <vector>
 #include <iostream>
 #include <sstream>
 #include <random>
-/**
- * @file uuid.h
- * @author Samrat Neupane (samratneupane215@gmail.com)
- * 
- * @copyright Copyright (c) 2022
- * 
- */
 #include <string>
 
 class UUID

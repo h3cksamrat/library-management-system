@@ -5,232 +5,256 @@
  * @copyright Copyright (c) 2022
  *
  */
+#pragma once
 #include <iostream>
 #include "block.h"
 #include "sha256.h"
 #include "uuid.h"
-
-using namespace std;
+#include "nlohmann/json.hpp"
 
 class BlockChain
 {
 private:
-    Block *previous;
-    Block *head;
+  Block *previous;
+  Block *head;
+
+  static BlockChain *blockchain;
+  // private constructor to force use of getInstance() to create Singleton object
+  BlockChain()
+  {
+    previous = nullptr;
+    head = nullptr;
+    std::cout << __FUNCTION__ << " Created" << std::endl;
+  }
 
 public:
-    static int numberOfBlocks;
+  static long unsigned int numberOfBlocks;
 
-    BlockChain()
+  static BlockChain *getInstance()
+  {
+    if (blockchain == nullptr)
     {
-        previous = nullptr;
-        head = nullptr;
-        cout << __FUNCTION__ << " Created" << endl;
+      blockchain = new BlockChain;
+    }
+    return blockchain;
+  }
+
+  std::string uuid()
+  {
+    UUID u;
+    return u.uuid();
+  }
+
+  std::string generateHashSHA256(std::string toHash)
+  {
+    return sha256(toHash);
+  }
+
+  int addNode(std::string new_data)
+  {
+
+    Block *new_block = new Block;
+
+    new_block->data = new_data;
+    new_block->next = nullptr;
+
+    if (previous != nullptr)
+    {
+      previous = head;
+      head = new_block;
+      new_block->actual_hash = generateHashSHA256(new_data + previous->actual_hash);
+      new_block->prev_hash = previous->actual_hash;
+
+      new_block->prev = previous;
     }
 
-    string uuid()
+    if (previous == nullptr)
     {
-        UUID u;
-        return u.uuid();
+      head = new_block;
+      previous = head;
+
+      new_block->prev_hash = generateHashSHA256(uuid());
+      new_block->data = new_data;
+      new_block->actual_hash = generateHashSHA256(new_data);
     }
 
-    string generateHashSHA256(string toHash)
+    std::cout << previous << " :: " << head << std::endl;
+
+    numberOfBlocks++;
+
+    return numberOfBlocks;
+  }
+
+  void traverseBlockChain(BlockChain &chain)
+  {
+
+    Block *actual_node = chain.head;
+    int currentBlock = numberOfBlocks;
+
+    while (actual_node != nullptr)
     {
-        return sha256(toHash);
+      std::cout << "block : " << currentBlock << std::endl;
+      std::cout << "data  : " << actual_node->data << std::endl;
+      actual_node = actual_node->prev;
+      currentBlock--;
     }
+  }
 
-    void addNode(string new_data)
+  int getNumberOfBlocks()
+  {
+    return numberOfBlocks;
+  }
+
+  void checkChainConsistency(BlockChain &chain)
+  {
+    Block *actual_node = chain.head;
+    int currentBlock = numberOfBlocks;
+
+    while ((actual_node->prev != nullptr) && (currentBlock > 2))
     {
+      std::cout << std::endl
+                << "block : " << currentBlock << std::endl;
+      std::string check_hash;
+      std::string check_data;
+      std::string check_hashFWD;
+      std::string check_dataFWD;
 
-        Block *new_block = new Block;
+      check_data = (actual_node->prev)->data;
+      check_hash = (actual_node->prev)->prev_hash;
 
-        new_block->data = new_data;
-        new_block->next = nullptr;
+      check_dataFWD = actual_node->data;
+      check_hashFWD = actual_node->prev_hash;
 
-        if (previous != nullptr)
+      if (actual_node->prev != nullptr)
+      {
+        std::string FWDCalculatedHash = generateHashSHA256(check_dataFWD + check_hashFWD);
+        std::string injectedCalculatedHash = generateHashSHA256(check_data + check_hash);
+
+        std::string storedHash = (actual_node->prev)->actual_hash;
+
+        if (injectedCalculatedHash == check_hashFWD)
         {
-
-            previous = head;
-            head = new_block;
-            new_block->actual_hash = generateHashSHA256(new_data + previous->actual_hash);
-            new_block->prev_hash = previous->actual_hash;
-
-            cout << "actual hash: " << new_block->actual_hash << endl;
-            cout << "prev hash: " << previous->actual_hash << endl;
-            new_block->prev = previous;
+          std::cout << " HASH OK ==> " << currentBlock - 1 << " Block Healthy !! " << std::endl;
         }
-
-        if (previous == nullptr)
+        if (injectedCalculatedHash != check_hashFWD)
         {
-            head = new_block;
-            previous = head;
-
-            new_block->prev_hash = generateHashSHA256(uuid());
-            new_block->data = new_data;
-            new_block->actual_hash = generateHashSHA256(new_data);
-            cout << "Genesis Data: " << new_block->data << endl;
+          std::cout << " HASH WRONG ==> " << currentBlock - 1 << " Block MANIPULATED !! " << std::endl;
         }
+      }
 
-        cout << previous << " :: " << head << endl;
-
-        numberOfBlocks++;
+      actual_node = actual_node->prev;
+      currentBlock--;
     }
+  }
 
-    void traverseBlockChain(BlockChain &chain)
-    {
+  void recalulcateChain(BlockChain &chain)
+  {
 
-        Block *actual_node = chain.head;
-        int currentBlock = numberOfBlocks;
+    Block *node = chain.head;
 
-        while (actual_node->prev != nullptr)
-        {
-            cout << "block : " << currentBlock << endl;
-            cout << "data  : " << actual_node->data << endl;
-            actual_node = actual_node->prev;
-            currentBlock--;
-        }
-    }
+    std::vector<std::string> tempChainData;
+    std::vector<Block *> ptr_node{node};
+    std::vector<Block *> recal_node{numberOfBlocks};
 
-
-    int getNumberOfBlocks()
-    {
-        return numberOfBlocks;
-    }
-
-    void checkChainConsistency(BlockChain &chain)
-    {
-        Block *actual_node = chain.head;
-        int currentBlock = numberOfBlocks;
-
-        while ((actual_node->prev != nullptr) && (currentBlock > 2))
-        {
-
-            string check_hash;
-            string check_data;
-            string check_hashFWD;
-            string check_dataFWD;
-            cout << __FUNCTION__ << "for block : " << currentBlock - 1 << endl;
-
-            check_data = (actual_node->prev)->data;
-            check_hash = (actual_node->prev)->prev_hash;
-
-            check_dataFWD = actual_node->data;
-            check_hashFWD = actual_node->prev_hash;
-
-            cout << "DATA CHECKED : " << (actual_node->prev)->data << endl;
-
-            if (actual_node->prev != nullptr)
-            {
-                string FWDCalculatedHash = generateHashSHA256(check_dataFWD + check_hashFWD);
-                string injectedCalculatedHash = generateHashSHA256(check_data + check_hash);
-
-                string storedHash = (actual_node->prev)->actual_hash;
-
-                if (injectedCalculatedHash == check_hashFWD)
-                {
-                    cout << " HASH OK ==> Block Healthy !! " << endl;
-                }
-                if (injectedCalculatedHash != check_hashFWD)
-                {
-                    cout << " HASH WRONG ==> Block MANIPULATED !! " << endl;
-                }
-            }
-
-            actual_node = actual_node->prev;
-            currentBlock--;
-        }
-    }
-
-    void recalulcateChain(BlockChain &chain)
+    while (node->prev != nullptr)
     {
 
-        Block *node = chain.head;
+      tempChainData.push_back(node->data);
+      node = node->prev;
+      ptr_node.push_back(node);
 
-        vector<string> tempChainData;
-        vector<Block *> ptr_node{node};
-        vector<Block *> recal_node{numberOfBlocks};
-
-        while (node->prev != nullptr)
-        {
-
-            tempChainData.push_back(node->data);
-            node = node->prev;
-            ptr_node.push_back(node);
-
-            if (node->prev == nullptr)
-            {
-                tempChainData.push_back(node->data);
-            }
-        }
-
-        int i = 0;
-        for (auto &ii : ptr_node)
-        {
-
-            cout << " DATA PTR NODE  " << ii->data << endl;
-            recal_node[numberOfBlocks - 1 - i] = ii;
-            i++;
-        }
-
-        int j = 0;
-        for (auto &ii : recal_node)
-        {
-
-            cout << " RECAL DATA   " << ii->data << endl;
-
-            if (j == 0)
-            {
-                ii->prev_hash = generateHashSHA256(uuid());
-                ii->actual_hash = generateHashSHA256(ii->data);
-            }
-
-            if (j > 0)
-            {
-
-                ii->actual_hash = generateHashSHA256(ii->data + (ii->prev)->actual_hash);
-                ii->prev_hash = (ii->prev)->actual_hash;
-            }
-
-            j++;
-        }
-
-        Block *node2 = chain.head;
-        int currentBlock = numberOfBlocks;
-
-        while (node2->prev != nullptr)
-        {
-            cout << endl;
-            cout << "block : " << currentBlock << endl;
-            cout << "data  : " << node2->data << endl;
-            cout << "actual hash : " << node2->actual_hash << endl;
-            cout << "NODE prev hash : " << node2->prev_hash << endl;
-            cout << "prev hash : " << (node2->prev)->actual_hash << endl;
-            node2 = node2->prev;
-            currentBlock--;
-        }
+      if (node->prev == nullptr)
+      {
+        tempChainData.push_back(node->data);
+      }
     }
 
-    void injectDataInBlock(BlockChain &chain, int injectToBlock, string injectData)
+    int i = 0;
+    for (auto &ii : ptr_node)
+    {
+      recal_node[numberOfBlocks - 1 - i] = ii;
+      i++;
+    }
+
+    int j = 0;
+    for (auto &ii : recal_node)
     {
 
-        Block *actual_node = chain.head;
-        int currentBlock = numberOfBlocks;
+      if (j == 0)
+      {
+        ii->prev_hash = generateHashSHA256(uuid());
+        ii->actual_hash = generateHashSHA256(ii->data);
+      }
 
-        while (actual_node->prev != nullptr)
-        {
+      if (j > 0)
+      {
 
-            if (currentBlock == injectToBlock)
-            {
+        ii->actual_hash = generateHashSHA256(ii->data + (ii->prev)->actual_hash);
+        ii->prev_hash = (ii->prev)->actual_hash;
+      }
 
-                cout << "HASH__1 " << actual_node->actual_hash << endl;
-                cout << "BEFORE INJECTION " << actual_node->data << endl;
-                actual_node->data = injectData;
-                actual_node->actual_hash = generateHashSHA256(injectData + actual_node->prev_hash);
-                cout << "HASH__2 " << actual_node->actual_hash << endl;
-            }
-
-            actual_node = actual_node->prev;
-            currentBlock--;
-        }
+      j++;
     }
+  }
+
+  void injectDataInBlock(BlockChain &chain, int injectToBlock, std::string injectData)
+  {
+
+    Block *actual_node = chain.head;
+    int currentBlock = numberOfBlocks;
+
+    if (injectToBlock == 1)
+    {
+      std::cout << "Cannot inject to Genesis Block" << std::endl;
+      return;
+    }
+
+    if (injectToBlock > numberOfBlocks)
+    {
+      std::cout << "Block not found" << std::endl;
+      return;
+    }
+
+    while (actual_node->prev != nullptr)
+    {
+      if (currentBlock == injectToBlock)
+      {
+        std::cout << "Injecting data in block " << injectToBlock << std::endl;
+        actual_node->data = injectData;
+        actual_node->actual_hash = generateHashSHA256(injectData + actual_node->prev_hash);
+        break;
+      }
+
+      actual_node = actual_node->prev;
+      currentBlock--;
+    }
+  }
+
+  nlohmann::json getBlockById(int id)
+  {
+    if (id > numberOfBlocks || id < 1)
+    {
+      std::cout << "Block not found" << std::endl;
+      return nlohmann::json({
+          {"error", "Block not found"},
+      });
+    }
+
+    Block *actual_node = head;
+    int currentBlock = numberOfBlocks;
+    nlohmann::json json;
+    while (actual_node != nullptr)
+    {
+      if (currentBlock == id)
+      {
+        json["data"] = actual_node->data;
+        json["actual_hash"] = actual_node->actual_hash;
+        json["prev_hash"] = actual_node->prev_hash;
+        break;
+      }
+      actual_node = actual_node->prev;
+      currentBlock--;
+    }
+    return json;
+  }
 };
